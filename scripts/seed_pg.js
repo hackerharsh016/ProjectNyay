@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Client } = require('pg');
 const client = new Client({ connectionString: 'postgresql://postgres:ProjectNyaya%231223@db.gbnvwjzasapedkkvrwrx.supabase.co:5432/postgres' });
 const categories = ['Politics', 'Crime', 'Current Affairs', 'Economy', 'Education', 'Governance', 'Technology', 'Environment', 'Law', 'Others'];
