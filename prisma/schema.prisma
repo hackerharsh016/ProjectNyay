@@ -1,13 +1,440 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// =======================
+// ENUMS
+// =======================
+
+enum CaseStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  ARCHIVED
+}
+
+enum CaseVisibility {
+  PUBLIC
+  PENDING
+  REMOVED
+}
+
+enum VideoSourceType {
+  NATIVE_UPLOAD
+  EMBEDDED_LINK
+}
+
+enum EvidenceType {
+  IMAGE
+  PDF
+  GOV_DOC
+  COURT_ORDER
+  NEWS_ARTICLE
+  EXTERNAL_LINK
+  VIDEO
+}
+
+enum EvidenceStatus {
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum ShareSourcePlatform {
+  INSTAGRAM
+  YOUTUBE
+  FACEBOOK
+  X
+  GALLERY
+  OTHER
+}
+
+enum AttestationType {
+  ORIGINAL_CREATOR
+  HAS_PERMISSION
+  PUBLIC_INTEREST_SUBMISSION
+}
+
+// =======================
+// MODELS
+// =======================
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  roles          UserRole[]
+  cases          Case[]
+  evidence       Evidence[]
+  claims         DiscussionClaim[]
+  counterClaims  DiscussionCounterClaim[]
+  replies        DiscussionReply[]
+  reactions      Reaction[]
+  pollVotes      PollVote[]
+  bookmarks      Bookmark[]
+  follows        Follow[]
+  notifications  Notification[]
+  reports        Report[]
+  auditLogs      AuditLog[]
+  shareRequests  ShareIntakeRequest[]
+  uploadSessions UploadSession[]
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cases Case[]
+}
+
+model Case {
+  id               String         @id @default(uuid())
+  title            String
+  shortDescription String
+  categoryId       String
+  location         String?
+  status           CaseStatus     @default(OPEN)
+  visibility       CaseVisibility @default(PENDING)
+  tags             String[]
+  thumbnailUrl     String?
+  createdById      String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  category  Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy User     @relation(fields: [createdById], references: [id])
+
+  videos   Video[]
+  evidence Evidence[]
+  events   TimelineEvent[]
+  claims   DiscussionClaim[]
+  polls    Poll[]
+
+  relationsFrom CaseRelation[] @relation("CaseFrom")
+  relationsTo   CaseRelation[] @relation("CaseTo")
+
+  duplicateChecks DuplicateCheck[]
+}
+
+model CaseRelation {
+  caseId        String
+  relatedCaseId String
+
+  case        Case @relation("CaseFrom", fields: [caseId], references: [id], onDelete: Cascade)
+  relatedCase Case @relation("CaseTo", fields: [relatedCaseId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, relatedCaseId])
+}
+
+model Video {
+  id         String          @id @default(uuid())
+  caseId     String
+  sourceType VideoSourceType
+  sourceUrl  String?
+  storageKey String?
+  duration   Float?
+  caption    String?
+  status     String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Evidence {
+  id         String         @id @default(uuid())
+  caseId     String
+  type       EvidenceType
+  status     EvidenceStatus @default(PENDING_REVIEW)
+  uploaderId String
+  sourceUrl  String?
+  fileKey    String?
+
+  targetType String?
+  targetId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case     Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaderId], references: [id])
+}
+
+model TimelineEvent {
+  id          String   @id @default(uuid())
+  caseId      String
+  date        DateTime
+  title       String
+  description String?
+  sourceUrl   String?
+  orderIndex  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model DiscussionClaim {
+  id        String   @id @default(uuid())
+  caseId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case          Case                     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user          User                     @relation(fields: [userId], references: [id])
+  counterClaims DiscussionCounterClaim[]
+}
+
+model DiscussionCounterClaim {
+  id        String   @id @default(uuid())
+  claimId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  claim   DiscussionClaim   @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id])
+  replies DiscussionReply[]
+}
+
+model DiscussionReply {
+  id             String   @id @default(uuid())
+  counterClaimId String
+  userId         String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  counterClaim DiscussionCounterClaim @relation(fields: [counterClaimId], references: [id], onDelete: Cascade)
+  user         User                   @relation(fields: [userId], references: [id])
+}
+
+model Reaction {
+  id     String @id @default(uuid())
+  userId String
+
+  targetType String
+  targetId   String
+
+  type      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Poll {
+  id        String    @id @default(uuid())
+  caseId    String?
+  question  String
+  options   Json
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  case  Case?      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+}
+
+model PollVote {
+  id        String   @id @default(uuid())
+  pollId    String
+  userId    String
+  optionId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([pollId, userId])
+}
+
+model Bookmark {
+  id         String   @id @default(uuid())
+  userId     String
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Follow {
+  id         String   @id @default(uuid())
+  followerId String
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  follower User @relation(fields: [followerId], references: [id])
+
+  @@unique([followerId, targetType, targetId])
+}
+
+model Notification {
+  id      String  @id @default(uuid())
+  userId  String
+  type    String
+  message String
+  isRead  Boolean @default(false)
+
+  targetType String?
+  targetId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  reporterId String
+  targetType String
+  targetId   String
+  reason     String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  reporter User @relation(fields: [reporterId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+}
+
+model ShareIntakeRequest {
+  id             String              @id @default(uuid())
+  userId         String
+  sourcePlatform ShareSourcePlatform
+  sourceUrl      String
+  status         String              @default("PENDING")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  user                   User                    @relation(fields: [userId], references: [id])
+  ownershipDeclaration   OwnershipDeclaration?
+  permissionConfirmation PermissionConfirmation?
+  duplicateChecks        DuplicateCheck[]
+}
+
+model OwnershipDeclaration {
+  id        String          @id @default(uuid())
+  requestId String          @unique
+  type      AttestationType
+  details   Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  request ShareIntakeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model PermissionConfirmation {
+  id        String          @id @default(uuid())
+  requestId String          @unique
+  type      AttestationType
+  details   Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  request ShareIntakeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model DuplicateCheck {
+  id            String   @id @default(uuid())
+  requestId     String
+  matchedCaseId String?
+  isDuplicate   Boolean
+  details       Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  request     ShareIntakeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  matchedCase Case?              @relation(fields: [matchedCaseId], references: [id])
+}
+
+model UploadSession {
+  id         String   @id @default(uuid())
+  userId     String
+  targetType String
+  targetId   String?
+  status     String   @default("PENDING")
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }
