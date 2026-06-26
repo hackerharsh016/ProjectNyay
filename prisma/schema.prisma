@@ -31,6 +31,13 @@ enum VideoSourceType {
   EMBEDDED_LINK
 }
 
+enum VideoStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
 enum EvidenceType {
   IMAGE
   PDF
@@ -82,6 +89,7 @@ model User {
   sessions       Session[]
   roles          UserRole[]
   cases          Case[]
+  videos         Video[]
   evidence       Evidence[]
   claims         DiscussionClaim[]
   counterClaims  DiscussionCounterClaim[]
@@ -186,18 +194,22 @@ model CaseRelation {
 }
 
 model Video {
-  id         String          @id @default(uuid())
-  caseId     String
-  sourceType VideoSourceType
-  sourceUrl  String?
-  storageKey String?
-  duration   Float?
-  caption    String?
-  status     String?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id           String          @id @default(uuid())
+  caseId       String
+  sourceType   VideoSourceType
+  sourceUrl    String?
+  storageKey   String?
+  muxAssetId   String?
+  thumbnailUrl String?
+  duration     Float?
+  caption      String?
+  status       VideoStatus     @default(PENDING)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  uploaderId   String
 
-  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case     Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaderId], references: [id])
 }
 
 model Evidence {
