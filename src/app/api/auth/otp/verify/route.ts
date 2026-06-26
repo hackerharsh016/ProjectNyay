@@ -15,9 +15,10 @@ export async function POST(req: Request) {
     const isValid = await AuthService.verifyOtp(email, otp);
     
     return NextResponse.json({ success: isValid });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Bad Request";
     return NextResponse.json(
-      { error: error.message || "Bad Request" },
+      { error: message },
       { status: 400 }
     );
   }

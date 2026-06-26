@@ -21,7 +21,7 @@ describe('RoleService.evaluateAccess', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       id: 'user1',
       roles: [{ role: { name: 'ADMIN', permissions: [] } }]
-    } as any);
+    } as never);
 
     const result = await RoleService.evaluateAccess('user1', 'perm:case:approve');
     expect(result).toBe(true);
@@ -31,7 +31,7 @@ describe('RoleService.evaluateAccess', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       id: 'user2',
       roles: [{ role: { name: 'MODERATOR', permissions: [] } }]
-    } as any);
+    } as never);
 
     const result = await RoleService.evaluateAccess('user2', 'role:MODERATOR');
     expect(result).toBe(true);
@@ -41,7 +41,7 @@ describe('RoleService.evaluateAccess', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       id: 'user3',
       roles: [{ role: { name: 'CITIZEN', permissions: [] } }]
-    } as any);
+    } as never);
 
     const result = await RoleService.evaluateAccess('user3', 'role:MODERATOR');
     expect(result).toBe(false);
@@ -58,7 +58,7 @@ describe('RoleService.evaluateAccess', () => {
           } 
         }
       ]
-    } as any);
+    } as never);
 
     const result = await RoleService.evaluateAccess('user4', 'perm:case:create_verified');
     expect(result).toBe(true);
@@ -75,7 +75,7 @@ describe('RoleService.evaluateAccess', () => {
           } 
         }
       ]
-    } as any);
+    } as never);
 
     const result = await RoleService.evaluateAccess('user5', 'perm:anything');
     expect(result).toBe(true);
@@ -92,7 +92,7 @@ describe('RoleService.evaluateAccess', () => {
           } 
         }
       ]
-    } as any);
+    } as never);
 
     const result = await RoleService.evaluateAccess('user6', 'perm:case:approve');
     expect(result).toBe(false);

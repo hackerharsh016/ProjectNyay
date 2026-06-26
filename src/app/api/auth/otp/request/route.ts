@@ -14,9 +14,10 @@ export async function POST(req: Request) {
     await AuthService.requestOtp(email);
 
     return NextResponse.json({ success: true, message: "OTP sent successfully" });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Bad Request";
     return NextResponse.json(
-      { error: error.message || "Bad Request" },
+      { error: message },
       { status: 400 }
     );
   }

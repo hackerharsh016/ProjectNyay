@@ -2,7 +2,7 @@ import { requireAuth } from "./requireAuth";
 import { RoleService } from "../modules/role/role.service";
 import { NextResponse } from "next/server";
 
-type Handler = (req: Request, ...args: any[]) => Promise<Response> | Response;
+type Handler = (req: Request, ...args: unknown[]) => Promise<Response> | Response;
 
 /**
  * HOF to wrap an API route handler with RBAC validation.
@@ -10,7 +10,7 @@ type Handler = (req: Request, ...args: any[]) => Promise<Response> | Response;
  * @param handler The Next.js API route handler
  */
 export function requireRole(requirement: string, handler: Handler): Handler {
-  return async (req: Request, ...args: any[]) => {
+  return async (req: Request, ...args: unknown[]) => {
     const session = await requireAuth();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,8 +22,9 @@ export function requireRole(requirement: string, handler: Handler): Handler {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
       return handler(req, ...args);
-    } catch (error: any) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
   };
 }

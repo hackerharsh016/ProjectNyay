@@ -36,17 +36,17 @@ export class RoleService {
     if (!user) return false;
 
     // Fast path: Global admin wildcard check
-    const hasAdmin = user.roles.some((ur: any) => ur.role.name === 'ADMIN');
+    const hasAdmin = user.roles.some((ur) => ur.role.name === 'ADMIN');
     if (hasAdmin) return true; // Admins have universal access
 
     if (isRoleCheck) {
-      return user.roles.some((ur: any) => ur.role.name === targetValue);
+      return user.roles.some((ur) => ur.role.name === targetValue);
     } else {
       // Permission check
       for (const ur of user.roles) {
         // Look for wildcard permission or exact match
         const hasPerm = ur.role.permissions.some(
-          (rp: any) => rp.permission.name === "*" || rp.permission.name === targetValue
+          (rp) => rp.permission.name === "*" || rp.permission.name === targetValue
         );
         if (hasPerm) return true;
       }
