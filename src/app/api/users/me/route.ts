@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "../../../../middlewares/requireAuth";
-import { UserService } from "../../../../../../modules/user/user.service";
-import { updateProfileSchema } from "../../../../../../modules/user/user.validators";
+import { requireAuth } from "../../../../../middlewares/requireAuth";
+import { UserService } from "../../../../../modules/user/user.service";
+import { updateProfileSchema } from "../../../../../modules/user/user.validators";
 
 export async function GET(req: Request) {
   const session = await requireAuth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await UserService.getUserById(session.user.id as string);
+  const user = await UserService.getUserById(session.user!.id as string);
   return NextResponse.json(user);
 }
 
@@ -18,7 +18,7 @@ export async function PATCH(req: Request) {
   try {
     const body = await req.json();
     const parsed = updateProfileSchema.parse(body);
-    const updated = await UserService.updateProfile(session.user.id as string, parsed);
+    const updated = await UserService.updateProfile(session.user!.id as string, parsed);
     return NextResponse.json(updated);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Invalid input" }, { status: 400 });

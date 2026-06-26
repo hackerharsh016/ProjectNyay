@@ -17,7 +17,7 @@ export function requireRole(requirement: string, handler: Handler): Handler {
     }
 
     try {
-      const hasAccess = await RoleService.evaluateAccess(session.user.id as string, requirement);
+      const hasAccess = await RoleService.evaluateAccess(session.user!.id as string, requirement);
       if (!hasAccess) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
